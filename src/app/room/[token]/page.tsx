@@ -136,7 +136,7 @@ function RoomInner() {
   }
 
   return (
-    <div className="flex min-h-full flex-col bg-zinc-100 dark:bg-zinc-950 md:h-screen md:overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-950 md:h-screen">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-indigo-100 bg-white/90 backdrop-blur dark:border-white/10 dark:bg-zinc-900/90">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-3">
@@ -232,13 +232,13 @@ function RoomInner() {
           ))}
           <div className="mt-2 rounded-xl bg-indigo-50 p-3 text-xs leading-relaxed text-indigo-900 dark:bg-white/5 dark:text-indigo-100">
             {isLive
-              ? "🟢 Live room — chat syncs in realtime via Supabase."
+              ? "🟢 Live room "
               : "Frontend preview — everything runs on local mock data. No network calls."}
           </div>
         </nav>
 
         {/* Main panel */}
-        <main className="flex min-h-[calc(100dvh-4rem)] flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-900 md:min-h-0 md:rounded-2xl md:shadow-xl md:ring-1 md:ring-indigo-100 md:dark:ring-white/10">
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-900 md:rounded-2xl md:shadow-xl md:ring-1 md:ring-indigo-100 md:dark:ring-white/10">
           {tab === "chat" && (
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex gap-1.5 border-b border-indigo-100 p-2 dark:border-white/10" role="tablist" aria-label="Chat type">

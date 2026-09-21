@@ -329,18 +329,38 @@ export function ChatInput({
           disabled={disabled}
           maxLength={500}
           autoComplete="off"
-          className="min-h-[44px] flex-1 rounded-full border border-indigo-200 bg-zinc-50 px-4 text-sm focus:border-indigo-500 focus:outline-2 focus:outline-indigo-500 disabled:opacity-60 dark:border-white/15 dark:bg-zinc-800"
+          className="min-h-[44px] flex-1 rounded-full border border-indigo-200 bg-zinc-50 px-4 text-base focus:border-indigo-500 focus:outline-2 focus:outline-indigo-500 disabled:opacity-60 dark:border-white/15 dark:bg-zinc-800 md:text-sm"
         />
         <button
           type="submit"
           disabled={disabled || cooling || !text.trim()}
           aria-label={cooling ? `Wait ${cooldownLeft} seconds before sending` : "Send message"}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-40"
+          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-40"
         >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
-            <path d="m22 2-7 20-4-9-9-4Z" />
-            <path d="M22 2 11 13" />
-          </svg>
+          {cooling ? (
+            <span className="relative flex h-7 w-7 items-center justify-center" aria-hidden>
+              <svg viewBox="0 0 28 28" className="absolute inset-0 h-full w-full -rotate-90">
+                <circle cx="14" cy="14" r="11" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
+                <circle
+                  cx="14"
+                  cy="14"
+                  r="11"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={2 * Math.PI * 11}
+                  strokeDashoffset={2 * Math.PI * 11 * (1 - Math.min(1, (now - lastSentAt) / COOLDOWN_MS))}
+                />
+              </svg>
+              <span className="text-xs font-black">{cooldownLeft}</span>
+            </span>
+          ) : (
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+              <path d="m22 2-7 20-4-9-9-4Z" />
+              <path d="M22 2 11 13" />
+            </svg>
+          )}
         </button>
       </form>
     </div>

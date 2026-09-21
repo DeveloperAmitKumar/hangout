@@ -186,7 +186,7 @@ export function PrivateChat({
           disabled={disabled}
           maxLength={500}
           autoComplete="off"
-          className="min-h-[44px] flex-1 rounded-full border border-indigo-200 bg-zinc-50 px-4 text-sm disabled:opacity-60 dark:border-white/15 dark:bg-zinc-800"
+          className="min-h-[44px] flex-1 rounded-full border border-indigo-200 bg-zinc-50 px-4 text-base disabled:opacity-60 dark:border-white/15 dark:bg-zinc-800 md:text-sm"
         />
         <button
           type="submit"

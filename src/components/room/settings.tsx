@@ -117,13 +117,15 @@ function SettingsDialog({ token, onClose }: { token: string; onClose: () => void
       role="dialog"
       aria-modal="true"
       aria-label="Room settings"
-      className="fixed inset-0 z-[90] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[90] overflow-y-auto bg-black/50"
       onClick={onClose}
     >
-      <div
-        className="slim-scroll max-h-[88vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl dark:bg-zinc-900 sm:rounded-3xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="flex min-h-full items-end justify-center sm:items-center sm:p-4">
+        <div
+          className="slim-scroll m-auto max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl dark:bg-zinc-900 sm:rounded-3xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span aria-hidden className="mx-auto mb-3 block h-1 w-10 rounded-full bg-zinc-200 dark:bg-white/20 sm:hidden" />
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-1.5 text-lg font-extrabold">
             <Settings2 className="h-5 w-5 text-indigo-600" aria-hidden /> Room settings
@@ -260,6 +262,7 @@ function SettingsDialog({ token, onClose }: { token: string; onClose: () => void
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
     </div>

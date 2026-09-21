@@ -237,8 +237,8 @@ export default function JoinPage() {
           </div>
         )}
 
-        <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-zinc-400">
-          <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> Frontend-only preview — no real join happens.
+        <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-zinc-400">Join your friends and fav person who invited you!🎉
+          <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> 
         </p>
       </Card>
     </div>
