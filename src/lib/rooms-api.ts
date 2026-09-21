@@ -10,7 +10,7 @@ type RoomRow = Database["public"]["Tables"]["rooms"]["Row"];
 type MemberRow = Database["public"]["Tables"]["members"]["Row"];
 type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
 
-export type JoinError = "not-found" | "expired" | "full" | "wrong-password";
+export type JoinError = "not-found" | "expired" | "full" | "wrong-password" | "blocked";
 
 /** SHA-256 hex of a room password (client-side, v1). */
 export async function hashPassword(password: string): Promise<string> {
@@ -152,7 +152,7 @@ export async function fetchJoinInfo(
   | { status: "not-found" }
   | { status: "expired"; name: string }
   | { status: "full"; name: string }
-  | { status: "ok"; name: string; hasPassword: boolean; memberCount: number }
+  | { status: "ok"; name: string; hasPassword: boolean; memberCount: number; roomId: string }
 > {
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase is not configured");
@@ -161,7 +161,7 @@ export async function fetchJoinInfo(
   if (new Date(roomRow.expires_at).getTime() <= Date.now()) return { status: "expired", name: roomRow.name };
   const { count } = await sb.from("members").select("id", { count: "exact", head: true }).eq("room_id", roomRow.id);
   if ((count ?? 0) >= 7) return { status: "full", name: roomRow.name };
-  return { status: "ok", name: roomRow.name, hasPassword: Boolean(roomRow.password_hash), memberCount: count ?? 0 };
+  return { status: "ok", name: roomRow.name, hasPassword: Boolean(roomRow.password_hash), memberCount: count ?? 0, roomId: roomRow.id };
 }
 
 /** Join by invite token. Returns JoinError instead of throwing for expected cases. */
@@ -178,6 +178,18 @@ export async function joinRoom(
   if (roomRow.password_hash) {
     const hash = await hashPassword(password ?? "");
     if (hash !== roomRow.password_hash) return { error: "wrong-password" };
+  }
+  // Blocked names can't come back (case-insensitive exact match)
+  const { data: blockRows } = await sb
+    .from("room_blocks")
+    .select("display_name")
+    .eq("room_id", roomRow.id);
+  if (
+    (blockRows ?? []).some(
+      (b) => b.display_name.toLowerCase() === displayName.trim().toLowerCase()
+    )
+  ) {
+    return { error: "blocked" };
   }
 
   const { count } = await sb.from("members").select("id", { count: "exact", head: true }).eq("room_id", roomRow.id);
@@ -253,11 +265,56 @@ export async function endLiveSession(roomId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-/** Host: remove a member (they see a "you were removed" screen). */
-export async function removeLiveMember(memberId: string): Promise<void> {
+export interface RoomBlock {
+  id: string;
+  roomId: string;
+  displayName: string;
+  createdAt: string;
+}
+
+/** Host: block a name (called on kick) + remove the member. */
+export async function blockLiveMember(
+  roomId: string,
+  memberId: string,
+  displayName: string,
+  byId: string
+): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
+  const clean = displayName.trim();
+  const { data: rows } = await sb.from("room_blocks").select("id,display_name").eq("room_id", roomId);
+  const already = (rows ?? []).some((r) => r.display_name.toLowerCase() === clean.toLowerCase());
+  if (!already) {
+    const { error: insErr } = await sb
+      .from("room_blocks")
+      .insert({ room_id: roomId, display_name: clean, blocked_by: byId });
+    // 23505 = raced duplicate block; safe to ignore
+    if (insErr && (insErr as { code?: string }).code !== "23505") throw new Error(insErr.message);
+  }
   const { error } = await sb.from("members").delete().eq("id", memberId);
+  if (error) throw new Error(error.message);
+}
+
+export async function fetchBlocks(roomId: string): Promise<RoomBlock[]> {
+  const sb = getSupabase();
+  if (!sb) return [];
+  const { data } = await sb
+    .from("room_blocks")
+    .select("*")
+    .eq("room_id", roomId)
+    .order("created_at", { ascending: false });
+  return (data ?? []).map((b) => ({
+    id: b.id,
+    roomId: b.room_id,
+    displayName: b.display_name,
+    createdAt: b.created_at,
+  }));
+}
+
+export async function unblockLiveMember(blockId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  const { error } = await sb.from("room_blocks").delete().eq("id", blockId);
   if (error) throw new Error(error.message);
 }
 
@@ -406,6 +463,52 @@ export function subscribeToPresence(
     void ch.untrack();
     sb.removeChannel(ch);
   };
+}
+
+export interface SavedProfile {
+  name: string;
+  avatarDataUrl: string | null;
+}
+
+const PROFILE_KEY = "hangout:profile";
+const MAX_SAVED_AVATAR_BYTES = 300 * 1024;
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("read failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
+/** Remember name (+ small avatar) in this browser for prefill next time. */
+export async function saveProfile(name: string, file?: File | null): Promise<void> {
+  try {
+    let avatarDataUrl: string | null = readProfile()?.avatarDataUrl ?? null;
+    if (file && file.size <= MAX_SAVED_AVATAR_BYTES) {
+      try {
+        avatarDataUrl = await fileToDataUrl(file);
+      } catch {
+        /* keep previous */
+      }
+    }
+    window.localStorage.setItem(PROFILE_KEY, JSON.stringify({ name: name.trim(), avatarDataUrl }));
+  } catch {
+    /* storage unavailable — ignore */
+  }
+}
+
+export function readProfile(): SavedProfile | null {
+  try {
+    const raw = window.localStorage.getItem(PROFILE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SavedProfile;
+    if (!parsed || typeof parsed.name !== "string") return null;
+    return { name: parsed.name, avatarDataUrl: parsed.avatarDataUrl ?? null };
+  } catch {
+    return null;
+  }
 }
 
 /** sessionStorage key for "my member id" per invite token (no-login identity). */

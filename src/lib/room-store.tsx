@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import { endLiveSession, leaveLiveRoom, persistMessage, persistReaction, removeLiveMember, renameLiveRoom } from "@/lib/rooms-api";
+import { blockLiveMember, endLiveSession, leaveLiveRoom, persistMessage, persistReaction, renameLiveRoom } from "@/lib/rooms-api";
 import { closeLivePoll, createLivePoll, saveGame, voteLivePoll } from "@/lib/games-polls-api";
 import { ensureThread, ensureThreadFor, sendLiveDm } from "@/lib/dm-api";
 import type {
@@ -646,6 +646,7 @@ export function RoomProvider({
   const removeMember = useCallback(
     async (memberId: string): Promise<boolean> => {
       const leaver = membersRef.current.find((m) => m.id === memberId);
+      const leaverName = leaver?.displayName ?? "Someone";
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
       setMessages((prev) => [
         ...prev,
@@ -654,14 +655,15 @@ export function RoomProvider({
           roomId: room.id,
           senderId: null,
           type: "system",
-          content: `${leaver?.displayName ?? "Someone"} was removed by the host`,
+          content: `${leaverName} was removed by the host`,
           reactions: {},
           createdAt: new Date().toISOString(),
         },
       ]);
       if (liveRef.current) {
         try {
-          await removeLiveMember(memberId);
+          // Kick = block: this name can't rejoin this room
+          await blockLiveMember(room.id, memberId, leaverName, meId);
         } catch (e) {
           console.error("Failed to remove member", e);
           return false;
@@ -669,7 +671,7 @@ export function RoomProvider({
       }
       return true;
     },
-    [room.id]
+    [room.id, meId]
   );
 
   const leaveRoom = useCallback(async (): Promise<boolean> => {

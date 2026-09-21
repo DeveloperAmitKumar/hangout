@@ -189,6 +189,23 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      room_blocks: {
+        Row: {
+          id: string;
+          room_id: string;
+          display_name: string;
+          blocked_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          display_name: string;
+          blocked_by?: string | null;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

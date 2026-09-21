@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Ban,
   Check,
   Copy,
   Crown,
@@ -12,10 +13,11 @@ import {
   Settings2,
   TimerOff,
   Trash2,
+  Undo2,
   X,
 } from "lucide-react";
 import { useRoom } from "@/lib/room-store";
-import { clearMemberId } from "@/lib/rooms-api";
+import { clearMemberId, fetchBlocks, unblockLiveMember, type RoomBlock } from "@/lib/rooms-api";
 import { useToast } from "@/lib/toast";
 import { Avatar, Badge } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -51,7 +53,13 @@ function SettingsDialog({ token, onClose }: { token: string; onClose: () => void
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [blocks, setBlocks] = useState<RoomBlock[]>([]);
   const link = typeof window !== "undefined" ? `${window.location.origin}/join/${token}` : `/join/${token}`;
+
+  useEffect(() => {
+    if (!isLive || !me.isHost) return;
+    fetchBlocks(room.id).then(setBlocks).catch(() => {});
+  }, [isLive, me.isHost, room.id, members.length]);
 
   async function copy() {
     try {
@@ -107,9 +115,25 @@ function SettingsDialog({ token, onClose }: { token: string; onClose: () => void
     const ok = await removeMember(id);
     setBusy(false);
     toast({
-      title: ok ? `${name} removed` : `Couldn't remove ${name}`,
+      title: ok ? `${name} removed & blocked` : `Couldn't remove ${name}`,
+      description: ok ? "That name can't rejoin this room." : undefined,
       variant: ok ? "default" : "error",
     });
+    if (ok && isLive) {
+      fetchBlocks(room.id).then(setBlocks).catch(() => {});
+    }
+  }
+
+  async function unblock(block: RoomBlock) {
+    setBusy(true);
+    try {
+      await unblockLiveMember(block.id);
+      setBlocks((prev) => prev.filter((b) => b.id !== block.id));
+      toast({ title: `${block.displayName} unblocked`, variant: "success" });
+    } catch {
+      toast({ title: "Couldn't unblock", variant: "error" });
+    }
+    setBusy(false);
   }
 
   return (
@@ -219,6 +243,29 @@ function SettingsDialog({ token, onClose }: { token: string; onClose: () => void
             <p className="mt-1 text-xs text-zinc-400">Only the host can remove members.</p>
           )}
         </div>
+
+        {/* Blocked names (host only, live) */}
+        {me.isHost && isLive && blocks.length > 0 && (
+          <div className="mt-4">
+            <Label>Blocked from this room ({blocks.length})</Label>
+            <ul className="space-y-1.5">
+              {blocks.map((b) => (
+                <li key={b.id} className="flex items-center gap-2 rounded-xl bg-rose-50/70 px-2.5 py-1.5 dark:bg-rose-500/10">
+                  <Ban className="h-4 w-4 shrink-0 text-rose-500" aria-hidden />
+                  <span className="flex-1 truncate text-[13px] font-bold">{b.displayName}</span>
+                  <button
+                    onClick={() => unblock(b)}
+                    disabled={busy}
+                    aria-label={`Unblock ${b.displayName}`}
+                    className="flex h-9 items-center gap-1 rounded-lg px-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 dark:text-indigo-200 dark:hover:bg-white/10"
+                  >
+                    <Undo2 className="h-3.5 w-3.5" aria-hidden /> Unblock
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Danger zone */}
         <div className="mt-4 space-y-2 border-t border-zinc-100 pt-3 dark:border-white/10">

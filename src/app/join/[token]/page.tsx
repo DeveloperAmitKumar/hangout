@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertTriangle, Clock, Lock, SearchX, Upload, Users } from "lucide-react";
+import { AlertTriangle, Ban, Clock, Lock, SearchX, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/primitives";
 import { Input, Label } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/lib/toast";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import { fetchJoinInfo, joinRoom, stashMemberId, updateMemberAvatar, uploadAvatar, type JoinError } from "@/lib/rooms-api";
+import { clearMemberId, fetchJoinInfo, joinRoom, readMemberId, refetchMembers, saveProfile, readProfile, stashMemberId, updateMemberAvatar, uploadAvatar, type JoinError } from "@/lib/rooms-api";
 import { validateImageFile } from "@/lib/utils";
 import { useLocalAvatar } from "@/hooks/use-room";
 import { cn } from "@/lib/utils";
 
-type PreviewState = "ok" | "full" | "expired" | "notfound";
+type PreviewState = "ok" | "full" | "expired" | "notfound" | "blocked";
 
 const STATES: { value: PreviewState; label: string }[] = [
   { value: "ok", label: "Joinable" },
@@ -30,7 +30,8 @@ export default function JoinPage() {
   const { preview, file: avatarFile, onFile } = useLocalAvatar();
   const token = params.token ?? "demo123";
   const live = isSupabaseConfigured;
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => readProfile()?.name ?? "");
+  const [savedAvatar] = useState(() => readProfile()?.avatarDataUrl ?? null);
   const [previewState, setPreviewState] = useState<PreviewState>("ok");
   const [joining, setJoining] = useState(false);
   const [password, setPassword] = useState("");
@@ -38,22 +39,35 @@ export default function JoinPage() {
   const [roomName, setRoomName] = useState<string | null>(null);
   const [needsPassword, setNeedsPassword] = useState(false);
   const [checking, setChecking] = useState(live);
+  const [existingName, setExistingName] = useState<string | null>(null);
 
   const ERROR_COPY: Record<JoinError, { title: string; description: string }> = {
     full: { title: "This room is full", description: "Playgrounds hold max 7 members." },
     expired: { title: "This room has expired", description: "The session timer hit zero." },
     "not-found": { title: "Room not found", description: "Check the link and try again." },
     "wrong-password": { title: "Wrong password", description: "That password doesn't match this room." },
+    blocked: { title: "You're blocked from this room", description: "The host removed this name — it can't rejoin." },
   };
 
   // LIVE: pre-check the room so we can show its name + password prompt up front
   useEffect(() => {
     if (!live) return;
     fetchJoinInfo(token)
-      .then((info) => {
+      .then(async (info) => {
         if (info.status === "ok") {
           setRoomName(info.name);
           setNeedsPassword(info.hasPassword);
+          // Same browser already inside? Don't let one person hold two seats.
+          const stashed = readMemberId(token);
+          if (stashed) {
+            try {
+              const ms = await refetchMembers(info.roomId);
+              const found = ms.find((m) => m.id === stashed);
+              if (found) setExistingName(found.displayName);
+            } catch {
+              /* ignore — show the normal form */
+            }
+          }
         } else {
           setPreviewState(info.status === "not-found" ? "notfound" : info.status);
         }
@@ -92,6 +106,7 @@ export default function JoinPage() {
               console.error("Avatar upload failed", e);
             }
           }
+          void saveProfile(name.trim(), avatarFile);
           stashMemberId(token, res.me.id);
           toast({ title: `Welcome, ${name.trim()}!`, description: "Opening your room…", variant: "success" });
           router.push(`/room/${token}`);
@@ -164,7 +179,7 @@ export default function JoinPage() {
             <div>
               <Label id="join-avatar">Avatar (preview only)</Label>
               <div className="flex items-center gap-3" role="group" aria-labelledby="join-avatar">
-                <Avatar src={preview ?? "https://i.pravatar.cc/96?img=12"} name={name || "You"} size={52} />
+                <Avatar src={preview ?? savedAvatar ?? "https://i.pravatar.cc/96?img=12"} name={name || "You"} size={52} />
                 <label
                   htmlFor="join-avatar-upload"
                   className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-dashed border-indigo-300 px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-white/20 dark:text-indigo-200 dark:hover:bg-white/5"
@@ -234,6 +249,35 @@ export default function JoinPage() {
             <p className="mt-2 font-bold">Room not found</p>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">Check the link — this invite token doesn&apos;t match any room.</p>
             <Button variant="secondary" className="mt-3" onClick={() => setPreviewState("ok")}>Back to join form</Button>
+          </div>
+        )}
+        {previewState === "blocked" && (
+          <div role="alert" className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center dark:border-rose-500/30 dark:bg-rose-500/10">
+            <Ban className="mx-auto h-8 w-8 text-rose-500" aria-hidden />
+            <p className="mt-2 font-bold">You&apos;re blocked from this room</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">The host removed this name — it can&apos;t rejoin this playground.</p>
+            <Button variant="secondary" className="mt-3" onClick={() => router.push("/")}>Back home</Button>
+          </div>
+        )}
+        {live && existingName && previewState === "ok" && (
+          <div role="status" className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-center dark:border-indigo-500/30 dark:bg-indigo-500/10">
+            <p className="text-sm">You&apos;re already in this room as <strong>{existingName}</strong> — one seat per browser.</p>
+            <div className="mt-3 flex gap-2">
+              <Button className="flex-1" onClick={() => router.push(`/room/${token}`)}>
+                Re-enter room
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  clearMemberId(token);
+                  setExistingName(null);
+                  toast({ title: "Cleared — join fresh below", variant: "default" });
+                }}
+              >
+                Join as someone else
+              </Button>
+            </div>
           </div>
         )}
 

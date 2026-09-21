@@ -20,7 +20,7 @@ import { Input, Label } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/lib/toast";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import { createRoom, stashMemberId, updateMemberAvatar, uploadAvatar } from "@/lib/rooms-api";
+import { createRoom, stashMemberId, updateMemberAvatar, uploadAvatar, readProfile, saveProfile } from "@/lib/rooms-api";
 import { validateImageFile } from "@/lib/utils";
 import { useLocalAvatar } from "@/hooks/use-room";
 import { cn } from "@/lib/utils";
@@ -46,7 +46,8 @@ export default function Home() {
   const { toast } = useToast();
   const { preview, file: avatarFile, onFile } = useLocalAvatar();
   const [playground, setPlayground] = useState("");
-  const [host, setHost] = useState("");
+  const [host, setHost] = useState(() => readProfile()?.name ?? "");
+  const [savedAvatar] = useState(() => readProfile()?.avatarDataUrl ?? null);
   const [duration, setDuration] = useState(60);
   const [custom, setCustom] = useState("90");
   const [visibility, setVisibility] = useState<"private" | "public">("private");
@@ -81,6 +82,7 @@ export default function Home() {
             }
           }
           stashMemberId(room.inviteToken, me.id);
+          void saveProfile(host.trim(), avatarFile);
           router.push(`/created/${room.inviteToken}?name=${encodeURIComponent(room.name)}&mins=${mins}`);
         })
         .catch((err: Error) => {
@@ -191,7 +193,7 @@ export default function Home() {
               <Label id="avatar-label">Avatar {isSupabaseConfigured ? "(JPG/PNG/WEBP, ≤5MB)" : "(preview only, stays on device)"}</Label>
               <div className="flex items-center gap-3" role="group" aria-labelledby="avatar-label">
                 <Avatar
-                  src={preview ?? "https://i.pravatar.cc/96?img=47"}
+                  src={preview ?? savedAvatar ?? "https://i.pravatar.cc/96?img=47"}
                   name={host || "You"}
                   size={52}
                 />
