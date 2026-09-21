@@ -300,6 +300,14 @@ export default function Home() {
                 🌍 Public rooms are listed on the Rooms page — anyone can join, no password allowed.
               </p>
             )}
+            
+            <div className="flex items-start gap-2 pt-2">
+              <input type="checkbox" id="terms-create" required className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600" />
+              <label htmlFor="terms-create" className="text-xs text-zinc-500 dark:text-zinc-400">
+                I agree to the <Link href="/terms" className="font-bold text-indigo-600 hover:underline dark:text-indigo-400">Terms and Conditions</Link> and <Link href="/privacy" className="font-bold text-indigo-600 hover:underline dark:text-indigo-400">Privacy Policy</Link>.
+              </label>
+            </div>
+
             <Button type="submit" className="w-full text-base" disabled={creating}>
               {creating ? "Creating…" : "Create Playground ✨"}
             </Button>

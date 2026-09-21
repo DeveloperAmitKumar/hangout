@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Ban,
@@ -31,9 +32,9 @@ export function SettingsButton({ token }: { token: string }) {
         onClick={() => setOpen(true)}
         aria-label="Open room settings"
         aria-haspopup="dialog"
-        className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/10"
+        className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/10"
       >
-        <Settings2 className="h-5 w-5" aria-hidden />
+        <Settings2 className="h-4 w-4 md:h-5 md:w-5" aria-hidden />
       </button>
       {open && <SettingsDialog token={token} onClose={() => setOpen(false)} />}
     </>
@@ -136,12 +137,17 @@ function SettingsDialog({ token, onClose }: { token: string; onClose: () => void
     setBusy(false);
   }
 
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Room settings"
-      className="fixed inset-0 z-[90] overflow-y-auto bg-black/50"
+      className="fixed inset-0 z-[100] overflow-y-auto bg-black/50"
       onClick={onClose}
     >
       <div className="flex min-h-full items-end justify-center sm:items-center sm:p-4">
@@ -312,6 +318,7 @@ function SettingsDialog({ token, onClose }: { token: string; onClose: () => void
         </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

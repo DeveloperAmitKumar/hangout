@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AlertTriangle, Ban, Clock, Lock, SearchX, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -221,6 +222,14 @@ export default function JoinPage() {
                 )}
               </div>
             )}
+            
+            <div className="flex items-start gap-2 pt-2">
+              <input type="checkbox" id="terms-join" required className="mt-0.5 h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-600" />
+              <label htmlFor="terms-join" className="text-xs text-zinc-500 dark:text-zinc-400">
+                I agree to the <Link href="/terms" className="font-bold text-indigo-600 hover:underline dark:text-indigo-400">Terms and Conditions</Link> and <Link href="/privacy" className="font-bold text-indigo-600 hover:underline dark:text-indigo-400">Privacy Policy</Link>.
+              </label>
+            </div>
+
             <Button type="submit" className="w-full" disabled={joining || (live && checking)}>
               {joining ? "Joining…" : "Join playground"}
             </Button>

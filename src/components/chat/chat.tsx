@@ -281,7 +281,7 @@ export function ChatInput({
           </div>
         </div>
       )}
-      <form onSubmit={submit} className="flex items-center gap-1.5">
+      <form onSubmit={submit} className="flex min-w-0 flex-1 items-center gap-1.5">
         <input
           ref={fileRef}
           type="file"
@@ -300,9 +300,9 @@ export function ChatInput({
           onClick={() => fileRef.current?.click()}
           disabled={disabled}
           aria-label="Share a photo"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 dark:text-indigo-300 dark:hover:bg-white/10"
+          className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 dark:text-indigo-300 dark:hover:bg-white/10"
         >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+          <svg viewBox="0 0 24 24" className="h-4 w-4 md:h-5 md:w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
             <rect x="3" y="3" width="18" height="18" rx="3" />
             <circle cx="9" cy="9" r="2" />
             <path d="m21 15-5-5L5 21" />
@@ -314,9 +314,9 @@ export function ChatInput({
           disabled={disabled}
           aria-label="Open emoji picker"
           aria-expanded={pickerOpen}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 dark:text-indigo-300 dark:hover:bg-white/10"
+          className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full text-indigo-600 hover:bg-indigo-50 disabled:opacity-40 dark:text-indigo-300 dark:hover:bg-white/10"
         >
-          <Smile className="h-5 w-5" aria-hidden />
+          <Smile className="h-4 w-4 md:h-5 md:w-5" aria-hidden />
         </button>
         <label htmlFor="chat-input" className="sr-only">
           Type a message
@@ -329,16 +329,16 @@ export function ChatInput({
           disabled={disabled}
           maxLength={500}
           autoComplete="off"
-          className="min-h-[44px] flex-1 rounded-full border border-indigo-200 bg-zinc-50 px-4 text-base focus:border-indigo-500 focus:outline-2 focus:outline-indigo-500 disabled:opacity-60 dark:border-white/15 dark:bg-zinc-800 md:text-sm"
+          className="min-h-[32px] md:min-h-[40px] min-w-0 flex-1 rounded-full border border-indigo-200 bg-zinc-50 px-3 md:px-4 text-[13px] md:text-sm focus:border-indigo-500 focus:outline-2 focus:outline-indigo-500 disabled:opacity-60 dark:border-white/15 dark:bg-zinc-800"
         />
         <button
           type="submit"
           disabled={disabled || cooling || !text.trim()}
           aria-label={cooling ? `Wait ${cooldownLeft} seconds before sending` : "Send message"}
-          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-40"
+          className="relative flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/25 disabled:opacity-40"
         >
           {cooling ? (
-            <span className="relative flex h-7 w-7 items-center justify-center" aria-hidden>
+            <span className="relative flex h-5 w-5 md:h-6 md:w-6 items-center justify-center" aria-hidden>
               <svg viewBox="0 0 28 28" className="absolute inset-0 h-full w-full -rotate-90">
                 <circle cx="14" cy="14" r="11" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
                 <circle
@@ -356,7 +356,7 @@ export function ChatInput({
               <span className="text-xs font-black">{cooldownLeft}</span>
             </span>
           ) : (
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+            <svg viewBox="0 0 24 24" className="h-4 w-4 md:h-5 md:w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
               <path d="m22 2-7 20-4-9-9-4Z" />
               <path d="M22 2 11 13" />
             </svg>

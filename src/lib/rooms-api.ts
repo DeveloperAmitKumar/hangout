@@ -152,8 +152,11 @@ export async function fetchJoinInfo(
   | { status: "not-found" }
   | { status: "expired"; name: string }
   | { status: "full"; name: string }
+  | { status: "blocked" }
   | { status: "ok"; name: string; hasPassword: boolean; memberCount: number; roomId: string }
 > {
+  if (isBlockedLocally(inviteToken)) return { status: "blocked" };
+
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase is not configured");
   const { data: roomRow } = await sb.from("rooms").select("*").eq("invite_token", inviteToken).single();
@@ -514,7 +517,7 @@ export function readProfile(): SavedProfile | null {
 /** sessionStorage key for "my member id" per invite token (no-login identity). */
 export function stashMemberId(inviteToken: string, memberId: string) {
   try {
-    window.sessionStorage.setItem(`hangout:me:${inviteToken}`, memberId);
+    window.localStorage.setItem(`hangout:me:${inviteToken}`, memberId);
   } catch {
     /* ignore */
   }
@@ -522,7 +525,7 @@ export function stashMemberId(inviteToken: string, memberId: string) {
 
 export function readMemberId(inviteToken: string): string | null {
   try {
-    return window.sessionStorage.getItem(`hangout:me:${inviteToken}`);
+    return window.localStorage.getItem(`hangout:me:${inviteToken}`);
   } catch {
     return null;
   }
@@ -530,8 +533,24 @@ export function readMemberId(inviteToken: string): string | null {
 
 export function clearMemberId(inviteToken: string) {
   try {
-    window.sessionStorage.removeItem(`hangout:me:${inviteToken}`);
+    window.localStorage.removeItem(`hangout:me:${inviteToken}`);
   } catch {
     /* ignore */
+  }
+}
+
+export function stashBlock(inviteToken: string) {
+  try {
+    window.localStorage.setItem(`hangout:blocked:${inviteToken}`, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isBlockedLocally(inviteToken: string): boolean {
+  try {
+    return window.localStorage.getItem(`hangout:blocked:${inviteToken}`) === "1";
+  } catch {
+    return false;
   }
 }

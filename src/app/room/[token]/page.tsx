@@ -23,6 +23,7 @@ import {
   subscribeToPresence,
   subscribeToRoom,
   uploadRoomPhoto,
+  stashBlock,
 } from "@/lib/rooms-api";
 import { fetchPolls, ensureRoomGames, subscribeToGames, subscribeToPolls } from "@/lib/games-polls-api";
 import { fetchThreads, subscribeToDms } from "@/lib/dm-api";
@@ -68,6 +69,12 @@ function RoomInner() {
     const t = window.setTimeout(() => setLoading(false), 700);
     return () => window.clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (amRemoved) {
+      stashBlock(params.token ?? room.inviteToken);
+    }
+  }, [amRemoved, params.token, room.inviteToken]);
 
   const expired = timerExpired || forceExpired;
   // Live: presence is truth (closes/leaves drop out instantly). Mock: DB flag.
@@ -139,20 +146,24 @@ function RoomInner() {
     <div className="flex h-dvh flex-col overflow-hidden bg-zinc-100 dark:bg-zinc-950 md:h-screen">
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-indigo-100 bg-white/90 backdrop-blur dark:border-white/10 dark:bg-zinc-900/90">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-3">
+        <div className="mx-auto flex h-12 md:h-14 w-full max-w-6xl items-center gap-2 px-3">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => {
+              if (window.confirm("Are you sure you want to leave the room?")) {
+                router.push("/");
+              }
+            }}
             aria-label="Back to home"
-            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-indigo-50 dark:hover:bg-white/10"
+            className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full hover:bg-indigo-50 dark:hover:bg-white/10"
           >
-            <ArrowLeft className="h-5 w-5" aria-hidden />
+            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" aria-hidden />
           </button>
           <Image
             src="/logo.png"
             alt="Hangout logo"
-            width={48}
-            height={48}
-            className="h-12 w-12 shrink-0 object-cover"
+            width={40}
+            height={40}
+            className="h-8 w-8 md:h-10 md:w-10 shrink-0 object-cover"
           />
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-[15px] font-extrabold tracking-tight">{room.name}</h1>
@@ -181,7 +192,7 @@ function RoomInner() {
               title="Demo toggle: simulate the timer hitting zero"
               aria-label="Demo toggle: simulate room expiry"
               className={cn(
-                "flex h-11 items-center gap-1 rounded-xl px-2.5 text-xs font-bold",
+                "flex h-8 md:h-10 items-center gap-1 rounded-xl px-2 md:px-2.5 text-[10px] md:text-xs font-bold",
                 forceExpired ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-100" : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-white/10"
               )}
             >
@@ -193,9 +204,9 @@ function RoomInner() {
           <button
             onClick={share}
             aria-label="Copy invite link"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/25"
+            className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/25"
           >
-            <Share2 className="h-5 w-5" aria-hidden />
+            <Share2 className="h-4 w-4 md:h-5 md:w-5" aria-hidden />
           </button>
         </div>
         {expired && (
