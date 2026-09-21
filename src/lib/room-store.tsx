@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { endLiveSession, leaveLiveRoom, persistMessage, persistReaction, removeLiveMember, renameLiveRoom } from "@/lib/rooms-api";
 import { closeLivePoll, createLivePoll, saveGame, voteLivePoll } from "@/lib/games-polls-api";
-import { ensureThread, sendLiveDm } from "@/lib/dm-api";
+import { ensureThread, ensureThreadFor, sendLiveDm } from "@/lib/dm-api";
 import type {
   GameSession,
   Member,
@@ -65,6 +65,8 @@ interface RoomStore {
   threads: PrivateThread[];
   privateMessages: PrivateMessage[];
   openThread: (otherMemberId: string) => Promise<string>;
+  /** Open (or find) the DM thread for any pair — used for TTT match chat. */
+  openMatchThread: (aId: string, bId: string) => Promise<string>;
   sendPrivate: (threadId: string, content: string) => Promise<boolean>;
   markThreadRead: (threadId: string) => void;
   ingestThreads: (threads: PrivateThread[]) => void;
@@ -533,6 +535,34 @@ export function RoomProvider({
     [room.id, threads, meId]
   );
 
+  const openMatchThread = useCallback(
+    async (aId: string, bId: string): Promise<string> => {
+      if (aId === bId) throw new Error("Need two different players");
+      if (liveRef.current) {
+        const t = await ensureThreadFor(room.id, aId, bId);
+        setThreads((prev) => (prev.some((x) => x.id === t.id) ? prev : [t, ...prev]));
+        return t.id;
+      }
+      const existing = threads.find(
+        (t) =>
+          (t.memberAId === aId && t.memberBId === bId) ||
+          (t.memberAId === bId && t.memberBId === aId)
+      );
+      if (existing) return existing.id;
+      const thread: PrivateThread = {
+        id: uid("th"),
+        roomId: room.id,
+        memberAId: aId,
+        memberBId: bId,
+        unreadCount: 0,
+        updatedAt: new Date().toISOString(),
+      };
+      setThreads((prev) => [thread, ...prev]);
+      return thread.id;
+    },
+    [room.id, threads]
+  );
+
   const sendPrivate = useCallback(
     async (threadId: string, content: string): Promise<boolean> => {
       if (!content.trim()) return false;
@@ -676,9 +706,9 @@ export function RoomProvider({
       isLive: live, myId, amRemoved, renameRoom, endSession, removeMember, leaveRoom,
       polls, vote, createPoll, closePoll, ingestPolls, upsertGame,
       ttt, playTtt, rematchTtt, challengePlayer, answerChallenge, word, guessWord, revealHint, nextWord,
-      threads, privateMessages, openThread, sendPrivate, markThreadRead, ingestThreads, ingestDm, bumpUnread, dmFocus, setDmFocus, onlineIds, setOnlineIds, typingNames,
+      threads, privateMessages, openThread, openMatchThread, sendPrivate, markThreadRead, ingestThreads, ingestDm, bumpUnread, dmFocus, setDmFocus, onlineIds, setOnlineIds, typingNames,
     }),
-    [room, members, me, messages, sendMessage, toggleReaction, ingestMessage, ingestMembers, ingestRoom, live, myId, amRemoved, renameRoom, endSession, removeMember, leaveRoom, polls, vote, createPoll, closePoll, ingestPolls, upsertGame, ttt, playTtt, rematchTtt, challengePlayer, answerChallenge, word, guessWord, revealHint, nextWord, threads, privateMessages, openThread, sendPrivate, markThreadRead, ingestThreads, ingestDm, bumpUnread, dmFocus, onlineIds, setOnlineIds, typingNames]
+    [room, members, me, messages, sendMessage, toggleReaction, ingestMessage, ingestMembers, ingestRoom, live, myId, amRemoved, renameRoom, endSession, removeMember, leaveRoom, polls, vote, createPoll, closePoll, ingestPolls, upsertGame, ttt, playTtt, rematchTtt, challengePlayer, answerChallenge, word, guessWord, revealHint, nextWord, threads, privateMessages, openThread, openMatchThread, sendPrivate, markThreadRead, ingestThreads, ingestDm, bumpUnread, dmFocus, onlineIds, setOnlineIds, typingNames]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

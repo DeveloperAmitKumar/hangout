@@ -20,11 +20,7 @@ export function PrivateChat({
   disabled: boolean;
   initialPeer: string | null;
 }) {
-  const { threads, privateMessages, members, me, sendPrivate, markThreadRead, openThread, setDmFocus } = useRoom();
-  const { toast } = useToast();
-  const [draft, setDraft] = useState("");
-  const [announce, setAnnounce] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const { threads, privateMessages, members, me, openThread, markThreadRead, setDmFocus } = useRoom();
 
   const myThreads = threads.filter((t) => t.memberAId === me.id || t.memberBId === me.id);
 
@@ -46,14 +42,6 @@ export function PrivateChat({
     setDmFocus(activeThreadId);
     return () => setDmFocus(null);
   }, [activeThreadId, setDmFocus]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeThreadId, privateMessages.length]);
-
-  useEffect(() => {
-    if (activeThreadId) markThreadRead(activeThreadId);
-  }, [activeThreadId, markThreadRead]);
 
   if (!activeThreadId) {
     return (
@@ -104,7 +92,6 @@ export function PrivateChat({
 
   const thread = threads.find((t) => t.id === activeThreadId);
   const other = thread ? otherMember(thread, me.id, members) : undefined;
-  const msgs = privateMessages.filter((m) => m.threadId === activeThreadId);
 
   return (
     <div className="flex h-full flex-col" aria-label={`Private chat with ${other?.displayName ?? "member"}`}>
@@ -125,10 +112,51 @@ export function PrivateChat({
         </div>
       </div>
 
+      <DmThreadView threadId={activeThreadId} disabled={disabled} emptyHint="No messages yet — say hi! Only the two of you can see this thread." />
+    </div>
+  );
+}
+
+/** Standalone thread view (no header/nav) — reused for TTT match chat. */
+export function DmThreadView({
+  threadId,
+  disabled,
+  emptyHint = "No messages yet — say hi!",
+}: {
+  threadId: string;
+  disabled: boolean;
+  emptyHint?: string;
+}) {
+  const { threads, privateMessages, members, me, sendPrivate, markThreadRead, setDmFocus } = useRoom();
+  const { toast } = useToast();
+  const [draft, setDraft] = useState("");
+  const [announce, setAnnounce] = useState<string | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const thread = threads.find((t) => t.id === threadId);
+  const other = thread ? otherMember(thread, me.id, members) : undefined;
+  const msgs = privateMessages.filter((m) => m.threadId === threadId);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [threadId, privateMessages.length]);
+
+  useEffect(() => {
+    markThreadRead(threadId);
+  }, [threadId, markThreadRead]);
+
+  // Same focus tracking as the full view (only one is ever mounted)
+  useEffect(() => {
+    setDmFocus(threadId);
+    return () => setDmFocus(null);
+  }, [threadId, setDmFocus]);
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="slim-scroll flex-1 space-y-2 overflow-y-auto px-3 py-3" role="log" aria-label="Private messages" aria-live="polite">
         {msgs.length === 0 && (
           <p className="rounded-2xl bg-indigo-50 p-3 text-center text-[13px] text-zinc-500 dark:bg-white/5">
-            No messages yet — say hi! Only the two of you can see this thread.
+            {emptyHint}
           </p>
         )}
         {msgs.map((m) => {
@@ -165,7 +193,7 @@ export function PrivateChat({
           if (disabled || !draft.trim()) return;
           const body = draft;
           setDraft("");
-          void sendPrivate(activeThreadId, body).then((ok) => {
+          void sendPrivate(threadId, body).then((ok) => {
             if (!ok) {
               setDraft(body);
               toast({ title: "Message didn't send", description: "Check your connection and retry.", variant: "error" });
@@ -175,11 +203,11 @@ export function PrivateChat({
           });
         }}
       >
-        <label htmlFor="dm-input" className="sr-only">
-          Message {other?.displayName} privately
+        <label htmlFor={`dm-input-${threadId}`} className="sr-only">
+          Message {other?.displayName ?? "privately"}
         </label>
         <input
-          id="dm-input"
+          id={`dm-input-${threadId}`}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder={disabled ? "Room expired — read-only" : `Message ${other?.displayName ?? ""}…`}

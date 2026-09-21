@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Crown, Eye, PhoneCall, PhoneOff, RotateCcw, Swords } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Crown, Eye, Lock, PhoneCall, PhoneOff, RotateCcw, Swords } from "lucide-react";
 import { useRoom } from "@/lib/room-store";
 import { useToast } from "@/lib/toast";
+import { DmThreadView } from "@/components/room/private-chat";
 import type { TicTacToeState } from "@/types";
 import { Avatar, Badge } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function TicTacToe({ disabled }: { disabled: boolean }) {
-  const { ttt, members, me, playTtt, rematchTtt, challengePlayer, answerChallenge } = useRoom();
+  const { ttt, members, me, playTtt, rematchTtt, challengePlayer, answerChallenge, openMatchThread } = useRoom();
   const { toast } = useToast();
   const s = ttt.state as TicTacToeState;
   const challenge = s.challenge ?? null;
@@ -23,6 +24,22 @@ export function TicTacToe({ disabled }: { disabled: boolean }) {
   const iAmChallenged = challenge?.toId === me.id;
   const iAmChallenger = challenge?.fromId === me.id;
   const opponents = members.filter((m) => m.id !== me.id);
+
+  // Private match chat between the two players (spectators can't see it)
+  const iAmPlayer = (pX === me.id || pO === me.id) && pX !== pO;
+  const [matchThreadId, setMatchThreadId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!iAmPlayer || !pX || !pO) return;
+    let alive = true;
+    openMatchThread(pX, pO)
+      .then((id) => {
+        if (alive) setMatchThreadId(id);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [pX, pO, iAmPlayer, openMatchThread]);
 
   // Ring the challenged player the moment a call-out for them appears
   const seenChallenge = useRef<string | null>(null);
@@ -217,6 +234,29 @@ export function TicTacToe({ disabled }: { disabled: boolean }) {
           <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
             Accepting a challenge starts a fresh match — challenger plays X.
           </p>
+        </div>
+      )}
+
+      {/* Match chat: private thread between the two players */}
+      {pX && pO && pX !== pO && (
+        <div className="mt-3 overflow-hidden rounded-2xl ring-1 ring-indigo-100 dark:ring-white/10">
+          <p className="flex items-center gap-1.5 bg-indigo-50/70 px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-indigo-700 dark:bg-white/5 dark:text-indigo-200">
+            <Lock className="h-3.5 w-3.5" aria-hidden /> Match chat · just the two players
+          </p>
+          {iAmPlayer && matchThreadId ? (
+            <div className="flex h-72 flex-col bg-zinc-50/50 dark:bg-zinc-900/50">
+              <DmThreadView
+                threadId={matchThreadId}
+                disabled={disabled}
+                emptyHint="Trash-talk here — only you two can read this. 😉"
+              />
+            </div>
+          ) : (
+            <p className="bg-zinc-50/50 px-3 py-2.5 text-xs text-zinc-500 dark:bg-zinc-900/50 dark:text-zinc-400">
+              🔒 {byId.get(pX)?.displayName} and {byId.get(pO)?.displayName} have a private
+              match chat — only visible to them.
+            </p>
+          )}
         </div>
       )}
     </section>

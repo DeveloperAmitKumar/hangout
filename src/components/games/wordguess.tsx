@@ -6,10 +6,11 @@ import { useRoom } from "@/lib/room-store";
 import type { WordGuessState } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/primitives";
+import { GameChatBox } from "@/components/chat/chat";
 import { Avatar, Badge } from "@/components/ui/avatar";
 import { useToast } from "@/lib/toast";
 
-export function WordGuess({ disabled }: { disabled: boolean }) {
+export function WordGuess({ disabled, onPhoto }: { disabled: boolean; onPhoto: (file: File) => void }) {
   const { word, members, me, guessWord, revealHint, nextWord } = useRoom();
   const { toast } = useToast();
   const [draft, setDraft] = useState("");
@@ -98,8 +99,7 @@ export function WordGuess({ disabled }: { disabled: boolean }) {
       <div className="mt-3 border-t border-indigo-50 pt-2 dark:border-white/10">
         <p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-zinc-400">
           <Trophy className="h-3.5 w-3.5" aria-hidden /> Live scoreboard
-        </p>
-        <ul className="mt-1.5 space-y-1">
+        </p>        <ul className="mt-1.5 space-y-1">
           {ranked.map((m, i) => (
             <li key={m.id} className="flex items-center gap-2 text-[13px]">
               <span className="w-4 text-zinc-400">{i + 1}.</span>
@@ -109,6 +109,11 @@ export function WordGuess({ disabled }: { disabled: boolean }) {
             </li>
           ))}
         </ul>
+      </div>
+
+      {/* Same group chat, right here — shout out guesses together */}
+      <div className="mt-3">
+        <GameChatBox disabled={disabled} onPhoto={onPhoto} title="Group chat — discuss the word" />
       </div>
     </section>
   );

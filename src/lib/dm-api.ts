@@ -51,11 +51,11 @@ export async function fetchThreadMessages(threadIds: string[]): Promise<PrivateM
   return (data ?? []).map(toDm);
 }
 
-/** Get-or-create a 1-to-1 thread (order-independent). */
-export async function ensureThread(
+/** Get-or-create a 1-to-1 thread for any pair (order-independent). */
+export async function ensureThreadFor(
   roomId: string,
-  meId: string,
-  otherId: string
+  aId: string,
+  bId: string
 ): Promise<PrivateThread> {
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase is not configured");
@@ -63,18 +63,25 @@ export async function ensureThread(
     .from("private_threads")
     .select("*")
     .eq("room_id", roomId)
-    .or(
-      `and(member_a_id.eq.${meId},member_b_id.eq.${otherId}),and(member_a_id.eq.${otherId},member_b_id.eq.${meId})`
-    )
+    .or(`and(member_a_id.eq.${aId},member_b_id.eq.${bId}),and(member_a_id.eq.${bId},member_b_id.eq.${aId})`)
     .maybeSingle();
   if (existing) return toThread(existing);
   const { data, error } = await sb
     .from("private_threads")
-    .insert({ room_id: roomId, member_a_id: meId, member_b_id: otherId })
+    .insert({ room_id: roomId, member_a_id: aId, member_b_id: bId })
     .select()
     .single();
   if (error || !data) throw new Error(error?.message ?? "Failed to open thread");
   return toThread(data);
+}
+
+/** Get-or-create a 1-to-1 thread (order-independent). */
+export async function ensureThread(
+  roomId: string,
+  meId: string,
+  otherId: string
+): Promise<PrivateThread> {
+  return ensureThreadFor(roomId, meId, otherId);
 }
 
 export async function sendLiveDm(threadId: string, senderId: string, content: string): Promise<PrivateMessage> {

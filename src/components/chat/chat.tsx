@@ -367,8 +367,35 @@ export function ChatInput({
   );
 }
 
-export function Lightbox({ src, alt, onClose }: { src: string | null; alt: string; onClose: () => void }) {
-  useEffect(() => {
+/**
+ * Group chat embedded under a game (e.g. Word Guess) — reuses the same live
+ * group feed, not a separate channel.
+ */
+export function GameChatBox({
+  disabled,
+  onPhoto,
+  title = "Group chat",
+}: {
+  disabled: boolean;
+  onPhoto: (file: File) => void;
+  title?: string;
+}) {
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+  return (
+    <div className="overflow-hidden rounded-2xl ring-1 ring-indigo-100 dark:ring-white/10">
+      <p className="bg-indigo-50/70 px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-indigo-700 dark:bg-white/5 dark:text-indigo-200">
+        💬 {title} · same as the Chat tab
+      </p>
+      <div className="flex h-80 flex-col bg-zinc-50/50 dark:bg-zinc-900/50">
+        <ChatFeed onImageOpen={(src, alt) => setLightbox({ src, alt })} />
+        <ChatInput disabled={disabled} onPhoto={onPhoto} />
+      </div>
+      <Lightbox src={lightbox?.src ?? null} alt={lightbox?.alt ?? ""} onClose={() => setLightbox(null)} />
+    </div>
+  );
+}
+
+export function Lightbox({ src, alt, onClose }: { src: string | null; alt: string; onClose: () => void }) {  useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }

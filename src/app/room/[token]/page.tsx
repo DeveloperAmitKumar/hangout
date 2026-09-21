@@ -313,7 +313,7 @@ function RoomInner() {
                 ) : gameTab === "tictactoe" ? (
                   <TicTacToe disabled={expired} />
                 ) : (
-                  <WordGuess disabled={expired} />
+                  <WordGuess disabled={expired} onPhoto={onPhoto} />
                 )}
               </div>
             </div>
