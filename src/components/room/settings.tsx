@@ -146,7 +146,7 @@ function SettingsDialog({ token, onClose }: { token: string; onClose: () => void
     >
       <div className="flex min-h-full items-end justify-center sm:items-center sm:p-4">
         <div
-          className="slim-scroll m-auto max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl dark:bg-zinc-900 sm:rounded-3xl"
+          className="slim-scroll mt-auto max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl dark:bg-zinc-900 sm:m-auto sm:rounded-3xl"
           onClick={(e) => e.stopPropagation()}
         >
           <span aria-hidden className="mx-auto mb-3 block h-1 w-10 rounded-full bg-zinc-200 dark:bg-white/20 sm:hidden" />
