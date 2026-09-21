@@ -114,7 +114,7 @@ export function PollsTab({ disabled }: { disabled: boolean }) {
         <EmptyState
           icon={BarChart3}
           title="No polls yet"
-          hint="Any member can create one with 2–6 options. Votes update instantly in this demo."
+          hint="Any member can create one with 2–6 options. Votes update instantly for everyone."
         />
       )}
 

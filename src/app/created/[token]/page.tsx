@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/primitives";
 import { useToast } from "@/lib/toast";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 function CreatedInner() {
   const params = useParams<{ token: string }>();
@@ -42,7 +43,7 @@ function CreatedInner() {
         <h1 className="mt-4 text-2xl font-extrabold tracking-tight">Playground ready! 🎉</h1>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           <strong className="text-zinc-900 dark:text-white">{name}</strong> · {mins} min session ·
-          mock room <code className="rounded bg-zinc-100 px-1 dark:bg-white/10">{token}</code>
+          room <code className="rounded bg-zinc-100 px-1 dark:bg-white/10">{token}</code>
         </p>
 
         <div className="mt-5 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3 dark:border-white/10 dark:bg-white/5">
@@ -60,21 +61,32 @@ function CreatedInner() {
           <p className="text-xs font-bold uppercase tracking-wide text-zinc-400">Share via</p>
           <div className="mt-2 flex justify-center gap-2">
             {[
-              { icon: MessageCircle, label: "Share on WhatsApp (demo)" },
-              { icon: Send, label: "Share via SMS (demo)" },
-              { icon: Mail, label: "Share via email (demo)" },
+              {
+                icon: MessageCircle,
+                label: "Share on WhatsApp",
+                href: `https://wa.me/?text=${encodeURIComponent(`Join my Hangout playground "${name}": ${link}`)}`,
+              },
+              {
+                icon: Send,
+                label: "Share via SMS",
+                href: `sms:?body=${encodeURIComponent(`Join my Hangout playground "${name}": ${link}`)}`,
+              },
+              {
+                icon: Mail,
+                label: "Share via email",
+                href: `mailto:?subject=${encodeURIComponent(`Join my Hangout playground!`)}&body=${encodeURIComponent(`Come hang out with us here: ${link}`)}`,
+              },
             ].map((s) => (
-              <button
+              <a
                 key={s.label}
+                href={s.href}
+                target={s.href.startsWith("https") ? "_blank" : undefined}
+                rel="noreferrer"
                 aria-label={s.label}
-                title="Demo only — no message is sent"
-                onClick={() =>
-                  toast({ title: "Demo shortcut", description: "Sharing is non-functional in this preview.", variant: "default" })
-                }
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-white/10 dark:text-indigo-100"
               >
                 <s.icon className="h-5 w-5" aria-hidden />
-              </button>
+              </a>
             ))}
           </div>
         </div>
@@ -87,7 +99,11 @@ function CreatedInner() {
         >
           Enter playground <ArrowRight className="h-4 w-4" aria-hidden />
         </Button>
-        <p className="mt-2 text-xs text-zinc-400">Frontend-only: opens the mock room, nothing is created server-side.</p>
+        <p className="mt-2 text-xs text-zinc-400">
+          {isSupabaseConfigured
+            ? "Your live room is ready — share the link so friends can jump in."
+            : "Preview mode — entering the demo room with sample data."}
+        </p>
       </Card>
     </div>
   );

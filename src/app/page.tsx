@@ -122,10 +122,10 @@ export default function Home() {
             🌍 Rooms
           </Link>
           <Link
-            href="/join/demo123"
+            href={isSupabaseConfigured ? "/rooms" : "/join/demo123"}
             className="flex min-h-[44px] items-center rounded-xl bg-white/15 px-4 text-sm font-bold text-white backdrop-blur hover:bg-white/25"
           >
-            Join a room
+            {isSupabaseConfigured ? "🌍 Find a room" : "Join a room"}
           </Link>
         </div>
       </header>
@@ -152,15 +152,17 @@ export default function Home() {
             ))}
           </div>
           <p className="mt-6 flex items-center gap-2 text-xs text-white/70">
-            <Zap className="h-4 w-4" aria-hidden /> This prototype runs on local mock data — nothing
-            is saved or sent anywhere.
+            <Zap className="h-4 w-4" aria-hidden />{" "}
+            {isSupabaseConfigured
+              ? "Live rooms — chat, games and polls sync instantly for everyone."
+              : "Preview mode — add Supabase keys to go live."}
           </p>
         </section>
 
         <Card className="h-fit p-5 md:p-6 max-md:order-first md:order-none" aria-label="Create playground form">
           <h2 className="text-xl font-extrabold tracking-tight">Create Playground</h2>
           <p className="mt-1 text-[13px] text-zinc-500 dark:text-zinc-400">
-            Under 30 seconds — we&apos;ll fake the rest with mock data.
+            Under 30 seconds — no signup, your room goes live instantly.
           </p>
           <form onSubmit={submit} className="mt-4 space-y-4">
             <div>
@@ -300,7 +302,9 @@ export default function Home() {
               {creating ? "Creating…" : "Create Playground ✨"}
             </Button>
             <p className="text-center text-xs text-zinc-400">
-              Submitting opens a fake room seeded from mock data.
+              {isSupabaseConfigured
+                ? "Submitting creates your live room instantly."
+                : "Preview mode — submitting opens a demo room with sample data."}
             </p>
           </form>
         </Card>

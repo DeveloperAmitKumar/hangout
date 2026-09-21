@@ -200,7 +200,7 @@ function RoomInner() {
         </div>
         {expired && (
           <div role="alert" className="bg-rose-500 px-3 py-1.5 text-center text-xs font-bold text-white">
-            ⏰ Session ended — this room is now read-only (demo). Chat, games, polls & DMs are locked.
+            ⏰ Session ended — this room is now read-only{forceExpired ? " (demo)" : ""}. Chat, games, polls & DMs are locked.
           </div>
         )}
       </header>
