@@ -45,7 +45,7 @@ export default function Home() {
   const router = useRouter();
   const { toast } = useToast();
   const { preview, file: avatarFile, onFile } = useLocalAvatar();
-  const [playground, setPlayground] = useState("Friday Movie Night");
+  const [playground, setPlayground] = useState("");
   const [host, setHost] = useState("");
   const [duration, setDuration] = useState(60);
   const [custom, setCustom] = useState("90");
