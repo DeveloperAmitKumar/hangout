@@ -139,3 +139,4 @@ poll, TTT challenge, DM. Check Supabase Table Editor + Storage for rows/files.
 Known v1 limitations (documented, accepted): RLS is open to `anon`
 (invite link = capability); password hashes are readable via the API;
 no moderation tools; max 7 members/room enforced in Postgres.
+# hangout
